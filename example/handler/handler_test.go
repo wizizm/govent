@@ -22,6 +22,4 @@ func Test_Notify(t *testing.T) {
 	b := &service_b.ServiceB{}
 	err = b.Create()
 	assert.NoError(t, err)
-
-	govent.SimpleProducer.Notify()
 }

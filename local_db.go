@@ -16,7 +16,7 @@ package govent
 import "container/list"
 
 type DataBase interface {
-	SaveMsg(topic, value string)
+	SaveMsg(topic string, msg Message)
 	DeleteMsg(topic string, e *list.Element)
 	AllMsg() *map[string]*list.List
 	InitMsg(values *map[string]*list.List) *map[string]*list.List
@@ -24,6 +24,10 @@ type DataBase interface {
 	DeleteObv(topic string, consumer Consumer)
 	AllObv() *map[string]*list.List
 	InitObv(values *map[string]*list.List) *map[string]*list.List
+}
+
+type Message struct {
+	Value string
 }
 
 var localMessages *map[string]*list.List
@@ -43,13 +47,13 @@ func (db *simpleLocalDb) DeleteMsg(topic string, e *list.Element) {
 	localMessages = &values
 }
 
-func (db *simpleLocalDb) SaveMsg(topic, value string) {
+func (db *simpleLocalDb) SaveMsg(topic string, msg Message) {
 	values := *localMessages
 	v := values[topic]
 	if nil == v {
 		v = list.New()
 	}
-	v.PushBack(value)
+	v.PushBack(msg)
 	values[topic] = v
 	localMessages = &values
 }

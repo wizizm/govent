@@ -25,7 +25,7 @@ type Producer interface {
 	Push(topic, value string)
 	Register(topic string, c Consumer)
 	Deregister(topic string, c Consumer)
-	Notify()
+	Notify(topic string)
 }
 
 //implements Producer
@@ -52,7 +52,10 @@ func (s *simpleProducer) Push(topic, value string) {
 		dbValues := &map[string]*list.List{}
 		s.db.InitMsg(dbValues)
 	}
-	s.db.SaveMsg(topic, value)
+	s.db.SaveMsg(topic, Message{
+		Value: value,
+	})
+	s.Notify(topic)
 }
 
 var SimpleProducer *simpleProducer
@@ -68,7 +71,7 @@ func init() {
 	}
 }
 
-func (s *simpleProducer) Notify() {
+func (s *simpleProducer) Notify(topic string) {
 	if nil == s.db.AllMsg() || len(*s.db.AllMsg()) == 0 {
 		return
 	}
@@ -76,19 +79,17 @@ func (s *simpleProducer) Notify() {
 		return
 	}
 	values := *s.db.AllMsg()
-	for topic, vs := range values {
-		allObs := *s.db.AllObv()
-		obs := allObs[topic]
-		if nil == obs {
-			return
+	vs := values[topic]
+	allObs := *s.db.AllObv()
+	obs := allObs[topic]
+	if nil == obs {
+		return
+	}
+	for v := vs.Front(); v != nil; v = v.Next() {
+		msg, _ := v.Value.(Message)
+		for ob := obs.Front(); ob != nil; ob = ob.Next() {
+			ob.Value.(Consumer).Execute(msg.Value)
 		}
-		for v := vs.Front(); v != nil; v = v.Next() {
-			for ob := obs.Front(); ob != nil; ob = ob.Next() {
-				ob.Value.(Consumer).Execute(v.Value.(string))
-			}
-		}
-		for v := vs.Front(); v != nil; v = v.Next() {
-			s.db.DeleteMsg(topic, v)
-		}
+		s.db.DeleteMsg(topic, v)
 	}
 }
